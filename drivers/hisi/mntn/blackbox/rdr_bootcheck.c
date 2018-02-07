@@ -54,6 +54,7 @@ return
 */
 static int rdr_check_exceptionboot(struct bootcheck *info)
 {
+#if 0
 	u32 reboot_type;/*lint !e578 */
 	struct rdr_base_info_s *base;
 	struct rdr_struct_s *tmpbb;
@@ -111,6 +112,8 @@ static int rdr_check_exceptionboot(struct bootcheck *info)
 	}
 
 	return RDR_DONTNEED_SAVE_MEM;
+#endif
+	return 0;
 }
 
 static inline void rdr_bootcheck_notify_dump(char *path, struct bootcheck *info)
@@ -179,6 +182,7 @@ static int rdr_save_history_log_back(void)
 
 int rdr_bootcheck_thread_body(void *arg)
 {
+#if 0
 	int cur_reboot_times;
 	int ret;
 	char path[PATH_MAXLEN];
@@ -263,5 +267,6 @@ end:
 	rdr_clear_tmppbb();
 
 	BB_PRINT_END();
+#endif
 	return 0;
 }
