@@ -167,8 +167,6 @@ void pm_gic_pending_dump(void)
 				if (gpio >= 0) {
 					printk("(gpio-%d)", gpio);
                 }
-				/* notify dubai module to update wakeup information */
-				dubai_update_wakeup_info("DUBAI_TAG_KERNEL_WAKEUP", "irq=%s gpio=%d", g_ap_irq_name[irq], gpio);
                                 if (BETA_USER == get_logusertype_flag()) {
                                           g_latt_wakeuptime = hisi_getcurtime() / 1000000;
                                           g_latt_sourcename = g_ap_irq_name[irq];
