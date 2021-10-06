@@ -302,12 +302,7 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 	  else if [ -x /bin/bash ]; then echo /bin/bash; \
 	  else echo sh; fi ; fi)
 
-ifeq ($(strip $(clang)), true)
-CLANG_CROSS_COMPILE_PRE:=$(srctree)/../../prebuilts/clang/host/linux-x86/clang-4679922/bin/
-HOSTCC       = $(CLANG_CROSS_COMPILE_PRE)clang
-else
 HOSTCC       = gcc
-endif
 HOSTCXX      = g++
 HOSTCFLAGS   := -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89
 HOSTCXXFLAGS = -O2
@@ -354,15 +349,8 @@ include scripts/Kbuild.include
 # Make variables (CC, etc...)
 AS		= $(SOURCEANALYZER) $(CROSS_COMPILE)as
 LD		= $(SOURCEANALYZER) $(CROSS_COMPILE)ld
-ifeq (,$(strip $(KP_PATCH)))
-CCACHE		?= $(srctree)/../../prebuilts/misc/linux-x86/ccache/ccache
-endif
-ifeq ($(strip $(clang)), true)
-CC		= $(SOURCEANALYZER) $(wildcard $(CCACHE)) $(CLANG_CROSS_COMPILE_PRE)clang
-else
-CC		= $(SOURCEANALYZER) $(wildcard $(CCACHE)) $(CROSS_COMPILE)gcc
-endif
 LDGOLD		= $(CROSS_COMPILE)ld.gold
+CC		= $(SOURCEANALYZER) $(CCACHE) $(CROSS_COMPILE)gcc
 CPP		= $(CC) -E
 AR		= $(SOURCEANALYZER) $(CROSS_COMPILE)ar
 NM		= $(CROSS_COMPILE)nm
@@ -579,6 +567,40 @@ ifneq ($(filter install,$(MAKECMDGOALS)),)
         endif
 endif
 
+ifeq ($(cc-name),clang)
+ifneq ($(CROSS_COMPILE),)
+CLANG_TARGET   := -target $(notdir $(CROSS_COMPILE:%-=%))
+GCC_TOOLCHAIN_DIR := $(dir $(shell which $(LD)))
+CLANG_PREFIX   := --prefix=$(GCC_TOOLCHAIN_DIR)
+GCC_TOOLCHAIN  := $(realpath $(GCC_TOOLCHAIN_DIR)/..)
+endif
+ifneq ($(GCC_TOOLCHAIN),)
+CLANG_GCC_TC   := -gcc-toolchain $(GCC_TOOLCHAIN)
+endif
+KBUILD_CFLAGS += $(CLANG_TARGET) $(CLANG_GCC_TC) $(CLANG_PREFIX)
+KBUILD_AFLAGS += $(CLANG_TARGET) $(CLANG_GCC_TC) $(CLANG_PREFIX)
+KBUILD_CPPFLAGS += $(call cc-option,-Qunused-arguments,)
+KBUILD_CFLAGS += $(call cc-disable-warning, unused-variable)
+KBUILD_CFLAGS += $(call cc-disable-warning, format-invalid-specifier)
+KBUILD_CFLAGS += $(call cc-disable-warning, gnu)
+KBUILD_CFLAGS += $(call cc-disable-warning, address-of-packed-member)
+# Quiet clang warning: comparison of unsigned expression < 0 is always false
+KBUILD_CFLAGS += $(call cc-disable-warning, tautological-compare)
+# CLANG uses a _MergedGlobals as optimization, but this breaks modpost, as the
+# source of a reference will be _MergedGlobals and not on of the whitelisted names.
+# See modpost pattern 2
+KBUILD_CFLAGS += $(call cc-option, -mno-global-merge,)
+KBUILD_CFLAGS += $(call cc-option, -fcatch-undefined-behavior)
+KBUILD_CFLAGS += $(call cc-option, -no-integrated-as)
+KBUILD_AFLAGS += $(call cc-option, -no-integrated-as)
+else
+
+# These warnings generated too much noise in a regular build.
+# Use make W=1 to enable them (see scripts/Makefile.build)
+KBUILD_CFLAGS += $(call cc-disable-warning, unused-but-set-variable)
+KBUILD_CFLAGS += $(call cc-disable-warning, unused-const-variable)
+endif
+
 ifeq ($(mixed-targets),1)
 # ===========================================================================
 # We're called with mixed targets (*config and build targets).
@@ -699,15 +721,14 @@ export CFLAGS_GCOV CFLAGS_KCOV
 # Make toolchain changes before including arch/$(SRCARCH)/Makefile to ensure
 # ar/cc/ld-* macros return correct values.
 ifdef CONFIG_LTO_CLANG
-CLANG_LIBS_PRE:=$(srctree)/../../prebuilts/clang/host/linux-x86/clang-4679922/lib64/
 # use GNU gold with LLVMgold for LTO linking, and LD for vmlinux_link
 LDFINAL_vmlinux := $(LD)
 LD		:= $(LDGOLD)
-LDFLAGS		+= -plugin $(CLANG_LIBS_PRE)LLVMgold.so
+LDFLAGS		+= -plugin LLVMgold.so
 # use llvm-ar for building symbol tables from IR files, and llvm-dis instead
 # of objdump for processing symbol versions and exports
-LLVM_AR		:= $(CLANG_CROSS_COMPILE_PRE)llvm-ar
-LLVM_DIS	:= $(CLANG_CROSS_COMPILE_PRE)llvm-dis
+LLVM_AR		:= llvm-ar
+LLVM_DIS	:= llvm-dis
 export LLVM_AR LLVM_DIS
 endif
 
@@ -905,10 +926,8 @@ KBUILD_CFLAGS += $(call cc-disable-warning, duplicate-decl-specifier)
 # Quiet clang warning: comparison of unsigned expression < 0 is always false
 KBUILD_CFLAGS += $(call cc-disable-warning, tautological-compare)
 
-ifeq ($(strip $(clang)), true)
 KBUILD_CFLAGS += -Wno-error=return-type
 KBUILD_CFLAGS += -Wno-error=unknown-warning-option
-endif
 
 # CLANG uses a _MergedGlobals as optimization, but this breaks modpost, as the
 # source of a reference will be _MergedGlobals and not on of the whitelisted names.
