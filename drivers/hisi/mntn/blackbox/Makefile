@@ -1,4 +1,4 @@
-ccflags-y += -Wall -Werror
+ccflags-y += -Wall 
 EXTRA_CFLAGS += -Idrivers/hisi/tzdriver
 EXTRA_CFLAGS += -Wno-error=date-time
 

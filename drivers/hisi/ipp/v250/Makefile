@@ -10,7 +10,7 @@ obj-$(CONFIG_HISPIPP_V250) += adapter_common.o \
                             adapter_reorder.o\
                             adapter_compare.o
 
-subdir-ccflags-$(CONFIG_HISPIPP_V250) += -Wall -Werror
+subdir-ccflags-$(CONFIG_HISPIPP_V250) += -Wall 
 subdir-ccflags-$(CONFIG_HISPIPP_V250) += -I$(srctree)/drivers/hisi/ipp/v250 \
                                     -I$(srctree)/drivers/hisi/ipp/v250/v250 \
                                     -I$(srctree)/drivers/hisi/ipp/v250/device \

@@ -1,4 +1,4 @@
-ccflags-y += -Wall -Werror
+ccflags-y += -Wall 
 ccfags-y += -I$(srctree)/drivers/hisi/ap/platform/$(OBB_PRODUCT_NAME)
 
 EXTRA_CFLAGS += -Idrivers/hisi/tzdriver

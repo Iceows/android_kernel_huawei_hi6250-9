@@ -11,7 +11,7 @@ obj-$(CONFIG_HISPIPP_V210) += memory.o
 obj-$(CONFIG_HISPIPP_V210) += v210/
 obj-$(CONFIG_HISPIPP_V210) += device/
 
-subdir-ccflags-$(CONFIG_HISPIPP_V210) += -Wall -Werror
+subdir-ccflags-$(CONFIG_HISPIPP_V210) += -Wall 
 subdir-ccflags-$(CONFIG_HISPIPP_V210) += -I$(srctree)/drivers/hisi/ipp/v210 \
                                     -I$(srctree)/drivers/hisi/ipp/v210/device \
                                     -I$(srctree)/drivers/hisi/ipp/v210/v210 \
