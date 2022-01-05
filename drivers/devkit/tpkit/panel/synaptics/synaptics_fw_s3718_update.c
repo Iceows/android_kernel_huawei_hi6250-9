@@ -4640,5 +4640,4 @@ void synap_fw_data_s3718_release(void)
 {
 	TS_LOG_INFO("s3718 release fw resource\n");
 	//Do not need to release hw data during the test
-	return 0;
 }
