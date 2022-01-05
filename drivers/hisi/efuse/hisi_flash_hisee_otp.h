@@ -16,15 +16,9 @@
 extern void creat_flash_otp_thread(void);
 extern void creat_flash_otp_init(void);
 #else
-static inline void creat_flash_otp_thread(void)
-{
-	return OK;
-}
+static inline void creat_flash_otp_thread(void){}
 
-static inline void creat_flash_otp_init(void)
-{
-	return OK;
-}
+static inline void creat_flash_otp_init(void){}
 #endif
 
 #endif
