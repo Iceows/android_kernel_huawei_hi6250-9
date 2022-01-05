@@ -1,4 +1,4 @@
-ccflags-y += -Wall -Werror
+ccflags-y += -Wall 
 EXTRA_CFLAGS += -Idrivers/hisi/tzdriver
 
 obj-$(CONFIG_HISI_BB_DIAGINFO) += bbox_lpmcu_diaginfo.o

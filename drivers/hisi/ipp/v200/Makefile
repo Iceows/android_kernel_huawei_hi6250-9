@@ -14,7 +14,7 @@ obj-$(CONFIG_HISPIPP_V200) += v200/
 obj-$(CONFIG_HISPIPP_V200) += device/
 
 
-subdir-ccflags-$(CONFIG_HISPIPP_V200) += -Wall -Werror
+subdir-ccflags-$(CONFIG_HISPIPP_V200) += -Wall 
 subdir-ccflags-$(CONFIG_HISPIPP_V200) += -I$(srctree)/drivers/hisi/ippv200 \
                                     -I$(srctree)/drivers/hisi/ipp/v200/v200 \
                                     -I$(srctree)/drivers/hisi/ipp/v200/device \
