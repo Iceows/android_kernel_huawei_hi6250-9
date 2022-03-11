@@ -18,6 +18,7 @@
 #endif
 #include <huawei_platform/power/huawei_charger.h>
 #include <huawei_platform/power/wireless_charger.h>
+#include <huawei_platform/power/wireless_transmitter.h>
 #include <huawei_platform/power/wireless_direct_charger.h>
 #include <../charging_core.h>
 #ifdef CONFIG_DIRECT_CHARGER
@@ -1009,6 +1010,7 @@ static int wireless_charge_boost_vout
 			wireless_charge_set_input_current(di);
 			goto FuncEnd;
 		}
+		wireless_charge_msleep(3000); /* delay 3s for vrect stablity */
 		di->curr_vmode_index= vmode;
 	}
 	di->rx_iout_max = rx_iout_max;
@@ -1146,6 +1148,8 @@ static void wireless_charge_iout_control(struct wireless_charge_device_info *di)
 			break;
 		}
 	}
+	if (di->pwroff_reset_flag)
+		return;
 	charger_iin_regval = charge_get_charger_iinlim_regval();
 	vrect = wireless_charge_get_rx_vrect();
 	tx_vout_reg = wireless_charge_get_tx_vout_reg();
@@ -1214,8 +1218,9 @@ static void wireless_charge_interference_work(struct work_struct *work)
 	rx_vout_max = di->product_para.rx_vout;
 	rx_iout_max = di->product_para.rx_iout;
 
-	for (i = 0; i < di->interfer_data.total_src &&
-		(di->interfer_data.interfer_src_state & BIT(i)); i++) {
+	for (i = 0; i < di->interfer_data.total_src; i++) {
+		if (!(di->interfer_data.interfer_src_state & BIT(i)))
+			continue;
 		if (di->interfer_data.interfer_para[i].tx_fixed_fop >= 0)
 			tx_fixed_fop =
 			    di->interfer_data.interfer_para[i].tx_fixed_fop;
@@ -1324,7 +1329,8 @@ static void wireless_charge_check_voltage(struct wireless_charge_device_info *di
 	int vout = wireless_charge_get_rx_vout();
 	int vbus = charge_get_vbus();
 
-	if (vout <= 0)
+	if (g_wireless_charge_stage < WIRELESS_STAGE_CHECK_TX_ID ||
+		vout <= 0)
 		return;
 
 	vout = (vout >= vbus) ? vout : vbus;
@@ -1785,10 +1791,12 @@ static void wireless_charge_wired_vbus_connect_work(struct work_struct *work)
 			hwlog_err("%s: wired vubs already off, reset rx\n", __func__);
 			di->ops->chip_reset();
 		}
-		wireless_charge_en_enable(RX_EN_DISABLE);
+		if (!wireless_is_in_tx_mode())
+			wireless_charge_en_enable(RX_EN_DISABLE);
 		wireless_charge_set_wireless_channel_state(WIRELESS_CHANNEL_OFF);
 	} else {
-		wireless_charge_en_enable(RX_EN_DISABLE);
+		if (!wireless_is_in_tx_mode())
+			wireless_charge_en_enable(RX_EN_DISABLE);
 		wireless_charge_set_wireless_channel_state(WIRELESS_CHANNEL_OFF);
 	}
 	mutex_unlock(&g_rx_en_mutex);
@@ -1989,6 +1997,7 @@ static void wireless_charge_pwroff_reset_work(struct work_struct *work)
 	}
 	if (di->pwroff_reset_flag) {
 		msleep(60);  //test result, about 60ms
+		(void)di->ops->chip_reset();
 		wireless_charge_set_tx_vout(TX_DEFAULT_VOUT);
 		wireless_charge_set_rx_vout(RX_DEFAULT_VOUT);
 	}
@@ -2102,6 +2111,12 @@ static void wireless_charge_rx_event_work(struct work_struct *work)
 				g_rx_otp_cnt = RX_OTP_CNT_MAX;
 				wireless_charge_dsm_report(di, ERROR_WIRELESS_RX_OTP, dsm_buff);
 			}
+			break;
+		case WIRELESS_CHARGE_RX_LDO_OFF:
+			hwlog_info("[%s] RX ldo off happend\n", __func__);
+			charger_source_sink_event(STOP_SINK_WIRELESS);
+			cancel_delayed_work_sync(&di->wireless_ctrl_work);
+			cancel_delayed_work_sync(&di->wireless_monitor_work);
 			break;
 		default:
 			hwlog_err("%s: has no this event_type(%d)\n", __func__, di->rx_event_type);
@@ -3069,12 +3084,21 @@ static void wireless_charge_device_info_free(struct wireless_charge_device_info 
 }
 static void wireless_charge_shutdown(struct platform_device *pdev)
 {
+	int ret;
 	struct wireless_charge_device_info *di = platform_get_drvdata(pdev);
 
 	hwlog_info("%s ++\n", __func__);
 	if (NULL == di) {
 		hwlog_err("%s: di is null\n", __func__);
 		return;
+	}
+	if (g_wireless_channel_state == WIRELESS_CHANNEL_ON) {
+		di->pwroff_reset_flag = true;
+		ret = wireless_charge_sw_control(WL_SWITCH_OFF);
+		ret += wireless_charge_set_tx_vout(ADAPTER_5V *
+			WL_MVOLT_PER_VOLT);
+		if (ret)
+			hwlog_err("%s: wlc sw control fail\n", __func__);
 	}
 	cancel_delayed_work(&di->rx_sample_work);
 	cancel_delayed_work(&di->wireless_ctrl_work);
