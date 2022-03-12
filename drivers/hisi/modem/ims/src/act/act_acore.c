@@ -346,11 +346,6 @@ static void act_cdev_setup( struct act_cdev *dev,  int index)
     int err = 0;
     dev_t devno = MKDEV(act_major, index); 
 
-    if (NULL == dev)
-    {
-        return -EINVAL;
-    }
-
     printk(KERN_INFO "Enter act_cdev_setup.");
 
     //Init the device
