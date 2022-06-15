@@ -1315,8 +1315,8 @@ static ssize_t fuse_dev_do_read(struct fuse_dev *fud, struct file *file,
 	}
 	list_move_tail(&req->list, &fpq->processing);
 	__fuse_get_request(req);
-	set_bit(FR_SENT, &req->flags);
 	spin_unlock(&fpq->lock);
+	set_bit(FR_SENT, &req->flags);
 	/* matches barrier in request_wait_answer() */
 	smp_mb__after_atomic();
 	if (test_bit(FR_INTERRUPTED, &req->flags))
@@ -1910,7 +1910,7 @@ static ssize_t fuse_dev_do_write(struct fuse_dev *fud,
 		cs->move_pages = 0;
 
 	err = copy_out_args(cs, &req->out, nbytes);
-	if (req->in.h.opcode == FUSE_CANONICAL_PATH) {
+	if (req->in.h.opcode == FUSE_CANONICAL_PATH && !req->out.h.error) {
 		char *path = (char *)req->out.args[0].value;
 
 		path[req->out.args[0].size - 1] = 0;

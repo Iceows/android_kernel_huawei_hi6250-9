@@ -730,8 +730,12 @@ static ssize_t store_rps_map(struct netdev_rx_queue *queue,
 	}
 
 	i = 0;
-	for_each_cpu_and(cpu, mask, cpu_online_mask)
+	for_each_cpu_and(cpu, mask, cpu_online_mask) {
+#ifdef CONFIG_HISI_RFS_RPS_MATCH
+		cpumask_set_cpu(cpu, &map->cpus_mask);
+#endif
 		map->cpus[i++] = cpu;
+	}
 
 	if (i)
 		map->len = i;
@@ -1380,6 +1384,9 @@ static int register_queue_kobjects(struct net_device *dev)
 error:
 	netdev_queue_update_kobjects(dev, txq, 0);
 	net_rx_queue_update_kobjects(dev, rxq, 0);
+#ifdef CONFIG_SYSFS
+	kset_unregister(dev->queues_kset);
+#endif
 	return error;
 }
 

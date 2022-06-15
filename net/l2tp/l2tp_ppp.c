@@ -437,11 +437,11 @@ static void pppol2tp_session_close(struct l2tp_session *session)
 
 	BUG_ON(session->magic != L2TP_SESSION_MAGIC);
 
-	if (sock) {
+	if (sock)
 		inet_shutdown(sock, SEND_SHUTDOWN);
-		/* Don't let the session go away before our socket does */
-		l2tp_session_inc_refcount(session);
-	}
+
+	/* Don't let the session go away before our socket does */
+	l2tp_session_inc_refcount(session);
 }
 
 /* Really kill the session socket. (Called from sock_put() if
@@ -590,13 +590,6 @@ static int pppol2tp_connect(struct socket *sock, struct sockaddr *uservaddr,
 	lock_sock(sk);
 
 	error = -EINVAL;
-
-	if (sockaddr_len != sizeof(struct sockaddr_pppol2tp) &&
-	    sockaddr_len != sizeof(struct sockaddr_pppol2tpv3) &&
-	    sockaddr_len != sizeof(struct sockaddr_pppol2tpin6) &&
-	    sockaddr_len != sizeof(struct sockaddr_pppol2tpv3in6))
-		goto end;
-
 	if (sp->sa_protocol != PX_PROTO_OL2TP)
 		goto end;
 

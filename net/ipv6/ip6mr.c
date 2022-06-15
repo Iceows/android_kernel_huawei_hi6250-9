@@ -495,7 +495,6 @@ static void *ipmr_mfc_seq_start(struct seq_file *seq, loff_t *pos)
 		return ERR_PTR(-ENOENT);
 
 	it->mrt = mrt;
-	it->cache = NULL;
 	return *pos ? ipmr_mfc_seq_idx(net, seq->private, *pos - 1)
 		: SEQ_START_TOKEN;
 }
@@ -1666,6 +1665,10 @@ int ip6_mroute_setsockopt(struct sock *sk, int optname, char __user *optval, uns
 	struct net *net = sock_net(sk);
 	struct mr6_table *mrt;
 
+    if (sk->sk_type != SOCK_RAW ||
+        inet_sk(sk)->inet_num != IPPROTO_ICMPV6)
+        return -EOPNOTSUPP;
+
 	mrt = ip6mr_get_table(net, raw6_sk(sk)->ip6mr_table ? : RT6_TABLE_DFLT);
 	if (!mrt)
 		return -ENOENT;
@@ -1677,9 +1680,6 @@ int ip6_mroute_setsockopt(struct sock *sk, int optname, char __user *optval, uns
 
 	switch (optname) {
 	case MRT6_INIT:
-		if (sk->sk_type != SOCK_RAW ||
-		    inet_sk(sk)->inet_num != IPPROTO_ICMPV6)
-			return -EOPNOTSUPP;
 		if (optlen < sizeof(int))
 			return -EINVAL;
 
@@ -1789,8 +1789,7 @@ int ip6_mroute_setsockopt(struct sock *sk, int optname, char __user *optval, uns
 		ret = 0;
 		if (!ip6mr_new_table(net, v))
 			ret = -ENOMEM;
-		else
-			raw6_sk(sk)->ip6mr_table = v;
+		raw6_sk(sk)->ip6mr_table = v;
 		rtnl_unlock();
 		return ret;
 	}
@@ -1815,6 +1814,10 @@ int ip6_mroute_getsockopt(struct sock *sk, int optname, char __user *optval,
 	int val;
 	struct net *net = sock_net(sk);
 	struct mr6_table *mrt;
+
+    if (sk->sk_type != SOCK_RAW ||
+        inet_sk(sk)->inet_num != IPPROTO_ICMPV6)
+            return -EOPNOTSUPP;
 
 	mrt = ip6mr_get_table(net, raw6_sk(sk)->ip6mr_table ? : RT6_TABLE_DFLT);
 	if (!mrt)

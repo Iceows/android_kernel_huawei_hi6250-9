@@ -17,6 +17,8 @@
 #include <linux/usb/hcd.h>	/* for usbcore internals */
 #include <asm/byteorder.h>
 
+#include <linux/hisi/usb/hisi_usb.h>
+
 #include "usb.h"
 
 static void cancel_async_set_config(struct usb_device *udev);
@@ -585,12 +587,14 @@ void usb_sg_cancel(struct usb_sg_request *io)
 	int i, retval;
 
 	spin_lock_irqsave(&io->lock, flags);
-	if (io->status) {
+	if (io->status || io->count == 0) {
 		spin_unlock_irqrestore(&io->lock, flags);
 		return;
 	}
 	/* shut everything down */
 	io->status = -ECONNRESET;
+	/* Keep the request alive until we're done */
+	io->count++;
 	spin_unlock_irqrestore(&io->lock, flags);
 
 	for (i = io->entries - 1; i >= 0; --i) {
@@ -604,6 +608,12 @@ void usb_sg_cancel(struct usb_sg_request *io)
 			dev_warn(&io->dev->dev, "%s, unlink --> %d\n",
 				 __func__, retval);
 	}
+
+	spin_lock_irqsave(&io->lock, flags);
+	io->count--;
+	if (!io->count)
+		complete(&io->complete);
+	spin_unlock_irqrestore(&io->lock, flags);
 }
 EXPORT_SYMBOL_GPL(usb_sg_cancel);
 
@@ -1793,10 +1803,12 @@ free_interfaces:
 		}
 
 		i = dev->bus_mA - usb_get_max_power(dev, cp);
-		if (i < 0)
+		if (i < 0) {
+			hw_usb_host_abnormal_event_notify(USB_HOST_EVENT_POWER_INSUFFICIENT);
 			dev_warn(&dev->dev, "new config #%d exceeds power "
 					"limit by %dmA\n",
 					configuration, -i);
+		}
 	}
 
 	/* Wake up the device so we can send it the Set-Config request */

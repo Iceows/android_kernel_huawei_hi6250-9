@@ -175,13 +175,13 @@ static struct posix_acl *__f2fs_get_acl(struct inode *inode, int type,
 	if (type == ACL_TYPE_ACCESS)
 		name_index = F2FS_XATTR_INDEX_POSIX_ACL_ACCESS;
 
-	retval = f2fs_getxattr(inode, name_index, "", NULL, 0, dpage);
+	retval = f2fs_getxattr(inode, name_index, "", NULL, 0, dpage, NULL);
 	if (retval > 0) {
 		value = f2fs_kmalloc(F2FS_I_SB(inode), retval, GFP_F2FS_ZERO);
 		if (!value)
 			return ERR_PTR(-ENOMEM);
 		retval = f2fs_getxattr(inode, name_index, "", value,
-							retval, dpage);
+							retval, dpage, NULL);
 	}
 
 	if (retval > 0)
@@ -281,8 +281,6 @@ static int f2fs_acl_create_masq(struct posix_acl *acl, umode_t *mode_p)
 	struct posix_acl_entry *group_obj = NULL, *mask_obj = NULL;
 	umode_t mode = *mode_p;
 	int not_equiv = 0;
-
-	/* assert(atomic_read(acl->a_refcount) == 1); */
 
 	FOREACH_ACL_ENTRY(pa, acl, pe) {
 		switch(pa->e_tag) {

@@ -48,6 +48,12 @@
 
 #define MPAGE_DA_EXTENT_TAIL 0x01
 
+#ifdef CONFIG_HUAWEI_IO_TRACING
+#include <trace/iotrace.h>
+DEFINE_TRACE(ext4_da_write_begin_end);
+DEFINE_TRACE(mpage_da_map_and_submit);
+#endif
+
 static __u32 ext4_inode_csum(struct inode *inode, struct ext4_inode *raw,
 			      struct ext4_inode_info *ei)
 {
@@ -1209,8 +1215,12 @@ static int ext4_write_begin(struct file *file, struct address_space *mapping,
 						    flags, pagep);
 		if (ret < 0)
 			return ret;
-		if (ret == 1)
-			return 0;
+		if (ret == 1) {
+#ifdef CONFIG_HUAWEI_IO_TRACING
+            trace_ext4_da_write_begin_end(inode, pos, len, flags);
+#endif
+            return 0;
+        }
 	}
 
 	/*
@@ -1296,7 +1306,10 @@ retry_journal:
 		put_page(page);
 		return ret;
 	}
-	*pagep = page;
+#ifdef CONFIG_HUAWEI_IO_TRACING
+    trace_ext4_da_write_begin_end(inode, pos, len, flags);
+#endif
+    *pagep = page;
 	return ret;
 }
 
@@ -2567,23 +2580,13 @@ static int mpage_prepare_extent_to_map(struct mpage_da_data *mpd)
 	mpd->map.m_len = 0;
 	mpd->next_page = index;
 	while (index <= end) {
-		nr_pages = pagevec_lookup_tag(&pvec, mapping, &index, tag,
-			      min(end - index, (pgoff_t)PAGEVEC_SIZE-1) + 1);
+		nr_pages = pagevec_lookup_range_tag(&pvec, mapping, &index, end,
+				tag, PAGEVEC_SIZE);
 		if (nr_pages == 0)
 			goto out;
 
 		for (i = 0; i < nr_pages; i++) {
 			struct page *page = pvec.pages[i];
-
-			/*
-			 * At this point, the page may be truncated or
-			 * invalidated (changing page->mapping to NULL), or
-			 * even swizzled back from swapper_space to tmpfs file
-			 * mapping. However, page->index will not change
-			 * because we have a reference on the page.
-			 */
-			if (page->index > end)
-				goto out;
 
 			/*
 			 * Accumulated enough dirty pages? This doesn't apply
@@ -4449,11 +4452,8 @@ void ext4_set_inode_flags(struct inode *inode)
 		new_fl |= S_DIRSYNC;
 	if (test_opt(inode->i_sb, DAX) && S_ISREG(inode->i_mode))
 		new_fl |= S_DAX;
-	if (flags & EXT4_ENCRYPT_FL)
-		new_fl |= S_ENCRYPTED;
 	inode_set_flags(inode, new_fl,
-			S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC|S_DAX|
-			S_ENCRYPTED);
+			S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC|S_DAX);
 }
 
 /* Propagate flags from i_flags to EXT4_I(inode)->i_flags */

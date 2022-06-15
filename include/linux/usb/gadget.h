@@ -48,6 +48,7 @@ struct usb_ep;
  *     by adding a zero length packet as needed;
  * @short_not_ok: When reading data, makes short packets be
  *     treated as errors (queue stops advancing till cleanup).
+ * @dma_mapped: Indicates if request has been mapped to DMA (internal)
  * @complete: Function called when request completes, so this request and
  *	its buffer may be re-used.  The function will always be called with
  *	interrupts disabled, and it must not sleep.
@@ -103,6 +104,7 @@ struct usb_request {
 	unsigned		no_interrupt:1;
 	unsigned		zero:1;
 	unsigned		short_not_ok:1;
+	unsigned		dma_mapped:1;
 
 	void			(*complete)(struct usb_ep *ep,
 					struct usb_request *req);
@@ -216,6 +218,9 @@ struct usb_ep {
 	const struct usb_ep_ops	*ops;
 	struct list_head	ep_list;
 	struct usb_ep_caps	caps;
+#ifdef CONFIG_HISI_DEBUG_FS
+	bool			fake_claimed;
+#endif
 	bool			claimed;
 	bool			enabled;
 	unsigned		maxpacket:16;
@@ -404,6 +409,9 @@ struct usb_gadget {
 	unsigned			is_selfpowered:1;
 	unsigned			deactivated:1;
 	unsigned			connected:1;
+	#ifdef CONFIG_HISI_USB_CONFIGFS
+	unsigned	is_removing_driver;
+	#endif
 };
 #define work_to_gadget(w)	(container_of((w), struct usb_gadget, work))
 

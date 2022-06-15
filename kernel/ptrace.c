@@ -26,7 +26,7 @@
 #include <linux/hw_breakpoint.h>
 #include <linux/cn_proc.h>
 #include <linux/compat.h>
-
+#include <chipset_common/kernel_harden/hw_ptrace_log.h>
 /*
  * Access another process' address space via ptrace.
  * Source/target buffer must be kernel space,
@@ -74,9 +74,7 @@ void __ptrace_link(struct task_struct *child, struct task_struct *new_parent,
  */
 static void ptrace_link(struct task_struct *child, struct task_struct *new_parent)
 {
-	rcu_read_lock();
-	__ptrace_link(child, new_parent, __task_cred(new_parent));
-	rcu_read_unlock();
+	__ptrace_link(child, new_parent, current_cred());
 }
 
 /**
@@ -258,10 +256,12 @@ static int ptrace_check_attach(struct task_struct *child, bool ignore_state)
 
 static int ptrace_has_cap(struct user_namespace *ns, unsigned int mode)
 {
+	int check_cap = (mode & PTRACE_MODE_PERF_EVENT) ? CAP_PERF_EVENT : CAP_SYS_PTRACE;
+
 	if (mode & PTRACE_MODE_NOAUDIT)
-		return has_ns_capability_noaudit(current, ns, CAP_SYS_PTRACE);
+		return has_ns_capability_noaudit(current, ns, check_cap);
 	else
-		return has_ns_capability(current, ns, CAP_SYS_PTRACE);
+		return has_ns_capability(current, ns, check_cap);
 }
 
 /* Returns 0 on success, -errno on denial. */
@@ -895,8 +895,8 @@ int ptrace_request(struct task_struct *child, long request,
 		return generic_ptrace_peekdata(child, addr, data);
 	case PTRACE_POKETEXT:
 	case PTRACE_POKEDATA:
+		record_ptrace_info_before_return(request,child);
 		return generic_ptrace_pokedata(child, addr, data);
-
 #ifdef PTRACE_OLDSETOPTIONS
 	case PTRACE_OLDSETOPTIONS:
 #endif
@@ -1207,11 +1207,11 @@ int compat_ptrace_request(struct task_struct *child, compat_long_t request,
 
 	case PTRACE_POKETEXT:
 	case PTRACE_POKEDATA:
+		record_ptrace_info_before_return(request,child);
 		ret = ptrace_access_vm(child, addr, &data, sizeof(data),
 				FOLL_FORCE | FOLL_WRITE);
 		ret = (ret != sizeof(data) ? -EIO : 0);
 		break;
-
 	case PTRACE_GETEVENTMSG:
 		ret = put_user((compat_ulong_t) child->ptrace_message, datap);
 		break;

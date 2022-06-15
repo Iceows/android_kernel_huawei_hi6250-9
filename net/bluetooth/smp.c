@@ -2353,51 +2353,30 @@ unlock:
 	return ret;
 }
 
-int smp_cancel_and_remove_pairing(struct hci_dev *hdev, bdaddr_t *bdaddr,
-				  u8 addr_type)
+void smp_cancel_pairing(struct hci_conn *hcon)
 {
-	struct hci_conn *hcon;
-	struct l2cap_conn *conn;
+	struct l2cap_conn *conn = hcon->l2cap_data;
 	struct l2cap_chan *chan;
 	struct smp_chan *smp;
-	int err;
 
-	err = hci_remove_ltk(hdev, bdaddr, addr_type);
-	hci_remove_irk(hdev, bdaddr, addr_type);
-
-	hcon = hci_conn_hash_lookup_le(hdev, bdaddr, addr_type);
-	if (!hcon)
-		goto done;
-
-	conn = hcon->l2cap_data;
 	if (!conn)
-		goto done;
+		return;
 
 	chan = conn->smp;
 	if (!chan)
-		goto done;
+		return;
 
 	l2cap_chan_lock(chan);
 
 	smp = chan->data;
 	if (smp) {
-		/* Set keys to NULL to make sure smp_failure() does not try to
-		 * remove and free already invalidated rcu list entries. */
-		smp->ltk = NULL;
-		smp->slave_ltk = NULL;
-		smp->remote_irk = NULL;
-
 		if (test_bit(SMP_FLAG_COMPLETE, &smp->flags))
 			smp_failure(conn, 0);
 		else
 			smp_failure(conn, SMP_UNSPECIFIED);
-		err = 0;
 	}
 
 	l2cap_chan_unlock(chan);
-
-done:
-	return err;
 }
 
 static int smp_cmd_encrypt_info(struct l2cap_conn *conn, struct sk_buff *skb)
@@ -2622,6 +2601,15 @@ static int smp_cmd_public_key(struct l2cap_conn *conn, struct sk_buff *skb)
 
 	if (skb->len < sizeof(*key))
 		return SMP_INVALID_PARAMS;
+
+	/* Check if remote and local public keys are the same and debug key is
+	 * not in use.
+	 */
+	if (!test_bit(SMP_FLAG_DEBUG_KEY, &smp->flags) &&
+	    !crypto_memneq(key, smp->local_pk, 64)) {
+		bt_dev_err(hdev, "Remote and local public keys are identical");
+		return SMP_UNSPECIFIED;
+	}
 
 	memcpy(smp->remote_pk, key, 64);
 
