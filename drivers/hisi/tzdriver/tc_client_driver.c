@@ -745,14 +745,18 @@ static int set_login_information(TC_NS_DEV_File *dev_file,
 				 TC_NS_ClientContext *context)
 {
 	/* The daemon has failed to get login information or not supplied */
-	if (0 == dev_file->pkg_name_len)
+	if (0 == dev_file->pkg_name_len) {
+		TCERR("Failed to get package name\n");
 		return -1;
+	}
 
 	/* The 3rd parameter buffer points to the pkg name buffer in the
 	* device file pointer */
 	/* get package name len and package name */
 	context->params[3].memref.size_addr = (__u64)&dev_file->pkg_name_len;
 	context->params[3].memref.buffer = (__u64)dev_file->pkg_name;
+
+	//TCDEBUG("set_login : package name:%s\n", dev_file->pkg_name);
 
 	/* Set public key len and public key */
 	if (dev_file->pub_key_len != 0) {
@@ -1554,6 +1558,21 @@ int TC_NS_OpenSession(TC_NS_DEV_File *dev_file, TC_NS_ClientContext *context)
 	unsigned char *hash_buf = NULL;
 	bool hidl_access = false;
 
+	unsigned char fingerprint_hash[32] = {0xAC, 0xEB, 0x01, 0x1B, 0x1D, 0x6A, 0xB2, 0x0F,
+					      0x63, 0xA7, 0x46, 0x02, 0x42, 0x80, 0x2C, 0x46,
+					      0x18, 0x60, 0xA0, 0xB8, 0xEC, 0x90, 0xEA, 0xDD,
+					      0xF8, 0x1A, 0xE7, 0x83, 0xF6, 0x1E, 0x47, 0x83};
+
+	unsigned char keystore_hash[32] = {0xD4, 0x43, 0x5B, 0xE4, 0x56, 0xBB, 0x1D, 0xF0,
+					   0xDA, 0x27, 0x11, 0x45, 0xF1, 0x31, 0x50, 0xF9,
+					   0xD1, 0x97, 0x6C, 0x52, 0x34, 0xA2, 0xD2, 0x3D,
+					   0x82, 0x7D, 0x61, 0x0D, 0x18, 0x0F, 0x6A, 0xEE};
+
+	unsigned char gatekeeper_hash[32] = {0x27, 0x1C, 0x74, 0xFC, 0xED, 0x6E, 0xE3, 0x81,
+					     0xFA, 0x3F, 0x4C, 0xC5, 0xCE, 0xD1, 0x87, 0xDA,
+					     0xF8, 0x31, 0x2F, 0xF0, 0xD9, 0x5C, 0x99, 0x1C,
+					     0x68, 0x09, 0x3D, 0xF2, 0x7D, 0xAD, 0x30, 0x63};
+
 	CFC_FUNC_ENTRY(TC_NS_OpenSession);
 
 	if (dev_file == NULL || context == NULL) {
@@ -1580,6 +1599,20 @@ int TC_NS_OpenSession(TC_NS_DEV_File *dev_file, TC_NS_ClientContext *context)
 			}
 		}
 	}
+
+	/*
+	if (!strncmp(dev_file->pkg_name, "/vendor/bin/hw/vendor.huawei.hardware.biometrics.fingerprint@2.1-service", 72))
+		memcpy(hash_buf, fingerprint_hash, MAX_SHA_256_SZ);*/
+			
+	if (!strncmp(dev_file->pkg_name, "/vendor/bin/hw/android.hardware.biometrics.fingerprint@2.1-service", 66))
+		memcpy(hash_buf, fingerprint_hash, MAX_SHA_256_SZ);
+
+	if (!strncmp(dev_file->pkg_name, "/vendor/bin/hw/android.hardware.keymaster@3.0-service", 53))
+		memcpy(hash_buf, keystore_hash, MAX_SHA_256_SZ);
+
+	if (!strncmp(dev_file->pkg_name, "/vendor/bin/hw/android.hardware.gatekeeper@1.0-service", 54))
+		memcpy(hash_buf, gatekeeper_hash, MAX_SHA_256_SZ);
+
 	mutex_lock(&dev_file->service_lock);
 	service = tc_find_service(&dev_file->services_list, context->uuid); /*lint !e64 */
 
@@ -2066,7 +2099,7 @@ static int TC_NS_need_load_image(unsigned int file_id,
 	mb_pack->operation.params[0].memref.size = SZ_4K;
 
 	/* load image smc command */
-	TCDEBUG("smc cmd id %d\n", client_context.cmd_id);
+	TCDEBUG("smc cmd id %d\n", smc_cmd.cmd_id);
 	smc_cmd.cmd_id = GLOBAL_CMD_ID_NEED_LOAD_APP;
 	mb_pack->uuid[0] = 1;
 	smc_cmd.uuid_phys = virt_to_phys((void *)mb_pack->uuid);
