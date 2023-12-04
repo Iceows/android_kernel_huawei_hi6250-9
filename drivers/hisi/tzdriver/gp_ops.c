@@ -1074,12 +1074,16 @@ int tc_client_call(TC_NS_ClientContext *client_context,
 	if (client_context->cmd_id == GLOBAL_CMD_ID_OPEN_SESSION && global == TC_CALL_GLOBAL)
 		CFC_FUNC_ENTRY(tc_client_call);
 
+	char my_pkname[256];
+	
+	memset(my_pkname,0,256);
+	memcpy(my_pkname,dev_file->pkg_name,dev_file->pkg_name_len);
+	tlogi("set pkg_name to bypass security new: %s",my_pkname);
 	
 	/*
 	if (!strncmp(dev_file->pkg_name, "/vendor/bin/hw/vendor.huawei.hardware.biometrics.fingerprint@2.1-service", 72)) {
 		strncpy(dev_file->pkg_name, "/system/bin/fingerprintd", 72);
 		dev_file->pkg_name_len = 24;
-		tlogi("set pkg_name to bypass security new: %s",dev_file->pkg_name);
 	}*/
 	
 	if (!strncmp(dev_file->pkg_name, "/vendor/bin/hw/android.hardware.biometrics.fingerprint@2.1-service", 66)) {
