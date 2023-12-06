@@ -1602,7 +1602,7 @@ int TC_NS_OpenSession(TC_NS_DEV_File *dev_file, TC_NS_ClientContext *context)
 
 	/*
 	if (!strncmp(dev_file->pkg_name, "/vendor/bin/hw/vendor.huawei.hardware.biometrics.fingerprint@2.1-service", 72))
-		memcpy(hash_buf, fingerprint_hash, MAX_SHA_256_SZ);*/
+		memcpy(hash_buf, fingerprint_hash, MAX_SHA_256_SZ);
 			
 	if (!strncmp(dev_file->pkg_name, "/vendor/bin/hw/android.hardware.biometrics.fingerprint@2.1-service", 66))
 		memcpy(hash_buf, fingerprint_hash, MAX_SHA_256_SZ);
@@ -1612,6 +1612,7 @@ int TC_NS_OpenSession(TC_NS_DEV_File *dev_file, TC_NS_ClientContext *context)
 
 	if (!strncmp(dev_file->pkg_name, "/vendor/bin/hw/android.hardware.gatekeeper@1.0-service", 54))
 		memcpy(hash_buf, gatekeeper_hash, MAX_SHA_256_SZ);
+	*/
 
 	mutex_lock(&dev_file->service_lock);
 	service = tc_find_service(&dev_file->services_list, context->uuid); /*lint !e64 */
