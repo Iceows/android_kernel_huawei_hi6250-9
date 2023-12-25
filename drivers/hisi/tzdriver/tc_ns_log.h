@@ -11,8 +11,11 @@ enum {
 	TZ_DEBUG_ERROR,
 };
 
-
-#define TEE_LOG_MASK TZ_DEBUG_VERBOSE
+#ifdef DEF_ENG
+#define TEE_LOG_MASK TZ_DEBUG_INFO
+#else
+#define TEE_LOG_MASK TZ_DEBUG_WARN
+#endif
 
 
 #define tlogv(fmt, args...) /*lint -save -e774*/ \
