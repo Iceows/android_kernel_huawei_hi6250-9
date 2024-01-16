@@ -53,12 +53,11 @@
 #define VCNL36658_MAX_ThRESHOLD_NUM    29
 #define VCNL36658_MIN_ThRESHOLD_NUM    30
 
-#define TSL2591_MAX_ThRESHOLD_NUM    13
-#define TSL2591_MIN_ThRESHOLD_NUM    14
+#define TSL2591_MAX_ThRESHOLD_NUM    12
+#define TSL2591_MIN_ThRESHOLD_NUM    13
 
 #define BH1726_MAX_ThRESHOLD_NUM    14
 #define BH1726_MIN_ThRESHOLD_NUM    15
-#define CAP_CALIBRATE_THRESHOLE_LEN    4
 
 #define APDS9308_MAX_THD_NUM    12
 #define APDS9308_MIN_THD_NUM    13
@@ -201,7 +200,6 @@ struct als_platform_data {
 	uint8_t als_gain_dynamic;
 	uint8_t als_phone_tp_colour;
 	uint8_t als_extend_data[SENSOR_PLATFORM_EXTEND_ALS_DATA_SIZE];
-	uint8_t is_bllevel_supported;
 };
 
 struct ps_platform_data {
@@ -308,16 +306,10 @@ struct semteck_sar_data {
 	uint8_t ph;
 	uint16_t calibrate_thred[4];
 };
-struct abov_sar_data {
-	uint16_t phone_type;
-	uint8_t ph;
-	uint16_t calibrate_thred[CAP_CALIBRATE_THRESHOLE_LEN];
-};
 union sar_data {
 	struct cypress_sar_data cypress_data;
 	struct adux_sar_data	adux_data;
 	struct semteck_sar_data	semteck_data;
-	struct abov_sar_data abov_data;
 	//add the others here
 };
 
@@ -329,9 +321,8 @@ union sar_data {
 struct sar_platform_data {
 	struct sensor_combo_cfg cfg;
 	GPIO_NUM_TYPE gpio_int;
-	GPIO_NUM_TYPE gpio_int_sh;
 	uint16_t poll_interval;
-	uint16_t  calibrate_type;
+	int  calibrate_type;
 	union sar_data	sar_datas;
 };
 

@@ -37,5 +37,6 @@ typedef struct als_ud_cmd_map {
 void als_ud_block_release(void);
 void wake_up_als_ud_block(void);
 int als_underscreen_calidata_save(void);
+void save_light_to_sensorhub(uint32_t mipi_level, uint32_t bl_level);
 
 #endif //__SENSOR_FEIMA_H__

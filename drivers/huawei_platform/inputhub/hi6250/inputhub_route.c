@@ -2765,16 +2765,19 @@ void inputhub_process_sensor_report(const pkt_header_t* head)
         {
             hwlog_info("%s not report accel_data for dt\n",
                        __func__);
+            return;
         }
 
         if (unlikely((stop_auto_als) && (head->tag == TAG_ALS)))
         {
             hwlog_info("%s not report als_data for dt\n", __func__);
+            return;
         }
 
         if (unlikely((stop_auto_ps) && (head->tag == TAG_PS)))
         {
             hwlog_info("%s not report ps_data for dt\n", __func__);
+            return;
         }
 
         if (head->tag == TAG_PRESSURE)
@@ -2811,6 +2814,14 @@ void inputhub_process_sensor_report(const pkt_header_t* head)
                                   sensor_event->len_element, timestamp);
     flush_event:
         sensors_tm[head->tag] = timestamp;
+
+        if ((sensor_event->data_flag & FLUSH_END) || flush_flag == 1)
+        {
+            report_sensor_event_batch(TAG_FLUSH_META,
+                                             (int*)head,
+                                             sizeof(pkt_header_t),
+                                             0);
+        }
 }
 
 

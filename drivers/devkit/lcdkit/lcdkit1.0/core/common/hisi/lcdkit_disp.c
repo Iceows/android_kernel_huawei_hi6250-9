@@ -2343,7 +2343,7 @@ static int lcdkit_set_backlight(struct platform_device* pdev, uint32_t bl_level)
                    hisifd->index, hisifd->panel_info.bl_set_type);
     }
 
-    save_light_to_sensorhub(mipi_level, bl_level);
+    //save_light_to_sensorhub(mipi_level, bl_level);
     LCDKIT_DEBUG("fb%d, -.\n", hisifd->index);
 
     return ret;

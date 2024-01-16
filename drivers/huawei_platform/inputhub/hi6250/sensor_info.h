@@ -44,15 +44,6 @@
 #define TMD2745_PARA_SIZE (10)
 #define RPR531_PARA_SIZE (16)
 
-#define CAP_MODEM_THRESHOLE_LEN		8
-#define CAP_CALIBRATE_THRESHOLE_LEN	4
-
-#define MID_PS		1
-#define NEAR_PS		2
-#define PS_RATIO	1000
-#define PS_MODE_MAX	2
-#define PS_MODE_MIN	0
-
 #define DEFAULT_TPLCD (0)
 #define LG_TPLCD (1)
 #define JDI_TPLCD (2)
@@ -155,11 +146,6 @@ enum mag_charger_data{
 	NO_CHARGER = 0,                  // not need any charger for mag
 	NO_CAL_BY_CHARGER,                // when charger no calibrate but let calibrate order to 0
 	CAL_BY_CHARGER                      //when charger calibrate by current
-};
-
-enum sar_calibrate_index {
-	CALIBRATE_DIFF = 1,
-	CALIBRATE_OFFSET
 };
 
 struct i2c_data {
@@ -414,7 +400,6 @@ struct ps_extend_platform_data {
 	int pwindows_value;
 	int pwave_value;
 	int threshold_value;
-	int calibrate_noise;
 };
 
 struct ps_external_ir_param {
@@ -427,11 +412,7 @@ struct ps_external_ir_param {
 	int external_ir_pwave_value;
 	int internal_ir_threshold_value;
 	int external_ir_threshold_value;
-	int external_ir_calibrate_noise;
 	int external_ir_enable_gpio;
-	int external_ir_powermode;
-	int external_ir_pwindows_ratio;
-	int external_ir_pwave_ratio;
 };
 
 struct airpress_platform_data {
@@ -481,20 +462,10 @@ struct semteck_sar_data {
 	uint16_t calibrate_thred[4];
 	uint16_t offset_check;
 };
-
-struct abovb_sar_data {
-	uint16_t phone_type;
-	uint16_t threshold_to_modem[CAP_MODEM_THRESHOLE_LEN];
-	uint8_t ph;
-	uint16_t calibrate_thred[CAP_CALIBRATE_THRESHOLE_LEN];
-	uint16_t product_type;
-};
-
 union sar_data {
 	struct cypress_sar_data cypress_data;
 	struct adux_sar_data	adux_data;
 	struct semteck_sar_data	semteck_data;
-	struct abovb_sar_data abovb_data;
 	//add the others here
 };
 
@@ -505,8 +476,6 @@ union sar_data {
 */
 struct sar_platform_data {
 	struct sensor_combo_cfg cfg;
-	uint8_t gpio_int;
-	uint8_t gpio_int2_sh;
 	uint16_t poll_interval;
 	uint16_t flag_for_threshold_config;
 	int  calibrate_type;
@@ -534,17 +503,10 @@ struct sar_semtech_calibrate_data {
 	uint16_t offset;
 	uint16_t diff;
 };
-
-struct sar_abovb_calibrate_data {
-	uint16_t offset;
-	uint16_t diff;
-};
-
 union sar_calibrate_data {
 	struct sar_cap_proc_calibrate_data cap_cali_data;
 	struct sar_cypress_calibrate_data cypres_cali_data;
 	struct sar_semtech_calibrate_data semtech_cali_data;
-	struct sar_abovb_calibrate_data abovb_cali_data;
 };
 
 struct cap_prox_platform_data {

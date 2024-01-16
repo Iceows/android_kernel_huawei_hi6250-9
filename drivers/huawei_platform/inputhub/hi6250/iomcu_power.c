@@ -333,6 +333,12 @@ static void iomcu_power_info_init(void)
 
     iomcu_power = class_create(THIS_MODULE, "iomcu_power");
 
+    if (IS_ERR(iomcu_power))
+    {
+        hwlog_err(" %s class_create iomcu_power fail\n", __func__);
+        return;
+    }
+
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 13, 0))
     iomcu_power->dev_groups = &power_info_attrs_grp;
 #else
